@@ -1,0 +1,73 @@
+version: "3"
+
+services:
+  node1:
+    container_name: node1
+    image: dormlog_image
+    restart: always
+    stdin_open: true
+    tty: true
+    shm_size: 2G
+    privileged: true
+    environment:
+      - NODE_ID=1
+    ports:
+      - "31122:22"  # node1 ssh
+      - "31090:8081"  # spark master
+#      - "31100:8000"  # node1 nginx
+    hostname: node1
+    networks:
+      dormlog_net:
+        ipv4_address: "${SUBNET:-172.48}.0.11"
+    extra_hosts:
+      - "node2:${SUBNET:-172.48}.0.12"
+      - "node3:${SUBNET:-172.48}.0.13"
+    command: /bin/bash -c '/usr/sbin/sshd & /bin/bash'
+
+  node2:
+    container_name: node2
+    image: dormlog_image
+    restart: always
+    stdin_open: true
+    tty: true
+    shm_size: 2G
+    privileged: true
+    environment:
+      - NODE_ID=2
+    hostname: node2
+    networks:
+      dormlog_net:
+        ipv4_address: "${SUBNET:-172.48}.0.12"
+    extra_hosts:
+      - "node1:${SUBNET:-172.48}.0.11"
+      - "node3:${SUBNET:-172.48}.0.13"
+    command: /bin/bash -c '/usr/sbin/sshd & /bin/bash'
+
+  node3:
+    container_name: node3
+    image: dormlog_image
+    restart: always
+    stdin_open: true
+    tty: true
+    shm_size: 2G
+    privileged: true
+    environment:
+      - NODE_ID=3
+    ports:
+      - "31089:9870"  # yarn
+      - "31088:8088"  # hdfs
+    hostname: node3
+    networks:
+      dormlog_net:
+        ipv4_address: "${SUBNET:-172.48}.0.13"
+    extra_hosts:
+      - "node1:${SUBNET:-172.48}.0.11"
+      - "node2:${SUBNET:-172.48}.0.12"
+    command: /bin/bash -c '/usr/sbin/sshd & /bin/bash'
+
+networks:
+  dormlog_net:
+    name: dormlog_net
+    ipam:
+      config:
+        - subnet: "${SUBNET:-172.48}.0.0/16"
